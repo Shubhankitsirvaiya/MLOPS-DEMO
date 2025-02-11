@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 env:
-  DOCKER_IMAGE: your-dockerhub-username/fastapi-mlops:latest
+  DOCKER_IMAGE: sirvaiys/fastapi-mlops:latest
   ML_THRESHOLD: 0.80  # Accuracy threshold for retraining
 
 jobs:
