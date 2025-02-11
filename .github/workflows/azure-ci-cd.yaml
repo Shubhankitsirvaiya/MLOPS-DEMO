@@ -23,8 +23,8 @@ jobs:
 
       - name: Build and Push Docker Image to Docker Hub
         run: |
-          docker build -t your-dockerhub-username/fastapi-mlops:latest .
-          docker push your-dockerhub-username/fastapi-mlops:latest
+          docker build -t sirvaiys/fastapi-mlops:latest .
+          docker push sirvaiys/fastapi-mlops:latest
 
   deploy:
     needs: build
