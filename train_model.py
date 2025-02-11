@@ -1,36 +1,35 @@
-import pandas as pd
-import numpy as np
 import joblib
+import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
 
-# Step 1: Load Dataset
-url = "https://raw.githubusercontent.com/datasciencedojo/datasets/master/titanic.csv"
-df = pd.read_csv(url)
+# Function to Train & Save Model
+def train_and_save_model(model_path="model.pkl"):
+    """Train Model and Save to File"""
 
-# Step 2: Preprocessing
-df = df[['Pclass', 'Sex', 'Age', 'Fare', 'Survived']]
-df.dropna(inplace=True)
+    # Load dataset
+    url = "https://raw.githubusercontent.com/datasciencedojo/datasets/master/titanic.csv"
+    df = pd.read_csv(url)
+    df = df[['Pclass', 'Sex', 'Age', 'Fare', 'Survived']]
+    df.dropna(inplace=True)
+    df['Sex'] = df['Sex'].map({'male': 0, 'female': 1})
 
-# Convert categorical column 'Sex' to numeric
-df['Sex'] = df['Sex'].map({'male': 0, 'female': 1})
+    # Split dataset
+    X = df[['Pclass', 'Sex', 'Age', 'Fare']]
+    y = df['Survived']
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-X = df[['Pclass', 'Sex', 'Age', 'Fare']]
-y = df['Survived']
+    # Train model
+    model = RandomForestClassifier(n_estimators=100, random_state=42)
+    model.fit(X_train, y_train)
 
-# Step 3: Split Data
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    # Evaluate model
+    y_pred = model.predict(X_test)
+    accuracy = accuracy_score(y_test, y_pred)
 
-# Step 4: Train Model
-model = RandomForestClassifier(n_estimators=100, random_state=42)
-model.fit(X_train, y_train)
+    # Save model
+    joblib.dump(model, model_path)
+    print(f"✅ Model saved at {model_path} with Accuracy: {accuracy:.2f}")
 
-# Step 5: Evaluate Model
-y_pred = model.predict(X_test)
-accuracy = accuracy_score(y_test, y_pred)
-print(f"Model Accuracy: {accuracy:.2f}")
-
-# Step 6: Save Model
-joblib.dump(model, "model.pkl")
-print("Model saved as model.pkl")
+    return accuracy  # Return accuracy for monitoring

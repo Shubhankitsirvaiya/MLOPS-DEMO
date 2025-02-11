@@ -4,13 +4,16 @@ FROM python:3.9
 # Set the working directory
 WORKDIR /app
 
-# Copy all project files
-COPY . /app
+# Copy requirements first (to leverage Docker cache)
+COPY requirements.txt .
 
 # Install dependencies
-RUN pip install --no-cache-dir fastapi uvicorn joblib pandas numpy scikit-learn
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Expose the application port
+# Copy application files
+COPY . .
+
+# Expose FastAPI on port 8000
 EXPOSE 8000
 
 # Command to run the FastAPI app
