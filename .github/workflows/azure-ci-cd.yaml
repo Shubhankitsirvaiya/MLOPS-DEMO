@@ -1,17 +1,17 @@
-name: Azure App Service CI/CD with MLOps
+name: Azure App Service CI/CD with Retraining
 
 on:
   push:
     branches:
-      - main  # Trigger workflow when pushing to 'main'
+      - main  # Triggers workflow when pushing to 'main'
 
 permissions:
-  id-token: write  # Needed for OIDC Authentication
+  id-token: write
   contents: read
 
 env:
-  DOCKER_IMAGE: sirvaiys/fastapi-mlops:latest
-  ML_THRESHOLD: 0.80  # Accuracy threshold for retraining
+  DOCKER_IMAGE: sirvaiys/fastapi-mlops:latest  # Hardcoded Image Name
+  ML_THRESHOLD: 0.80  # Accuracy Threshold for Retraining
 
 jobs:
   build:
@@ -31,39 +31,44 @@ jobs:
 
       - name: Build and Push Docker Image to Docker Hub
         run: |
-          docker build -t $DOCKER_IMAGE .
-          docker push $DOCKER_IMAGE
+          docker build -t sirvaiys/fastapi-mlops:latest .
+          docker push sirvaiys/fastapi-mlops:latest
 
   deploy:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - name: Azure Login (Using OpenID Connect)
+      - name: Azure Login
         uses: azure/login@v1
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          allow-no-subscriptions: true
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
         with:
-          app-name: "fastapi-mlops"  # Your Azure Web App Name
-          images: $DOCKER_IMAGE
+          app-name: "fastapi-mlops"
+          images: "sirvaiys/fastapi-mlops:latest"
 
   retrain:
     needs: deploy
     runs-on: ubuntu-latest
     steps:
-      - name: Check Model Accuracy via Prometheus
+      - name: Check Model Accuracy
         run: |
+          echo "Fetching model accuracy from API..."
           ACCURACY=$(curl -s http://fastapi-mlops.azurewebsites.net/metrics | grep "model_accuracy" | awk '{print $2}')
           echo "Current Model Accuracy: $ACCURACY"
           if (( $(echo "$ACCURACY < $ML_THRESHOLD" | bc -l) )); then
-            echo "Model drift detected! Retraining..."
+            echo "⚠️ Model drift detected! Retraining..."
             python train_model.py
-            echo "Retrained successfully."
+            echo "✅ Retrained successfully. Committing updated model."
+            git config --global user.email "your-email@example.com"
+            git config --global user.name "GitHub Actions"
+            git add models/model.pkl
+            git commit -m "Updated model after retraining"
+            git push origin main
           else
-            echo "Model is stable. No retraining required."
+            echo "✅ Model accuracy is stable. No retraining needed."
           fi
